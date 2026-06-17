@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>책갈피 — AI 독서노트 작성 프로그램</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;900&family=Gowun+Batang&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="manuscript-bg" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-seal">冊</span>
+    <span class="brand-name">책갈피</span>
+    <span class="brand-tagline">AI 독서노트</span>
+  </div>
+
+  <nav class="tab-nav" id="tabNav" aria-label="주요 메뉴">
+    <button class="tab active" data-page="library">서가</button>
+    <button class="tab" data-page="work" disabled>작품노트</button>
+    <button class="tab" data-page="essay">감상문</button>
+    <button class="tab" data-page="slides">발표자료</button>
+  </nav>
+
+  <div class="toolbar-actions">
+    <button class="btn btn-ghost" id="exportCsvBtn">CSV 내보내기</button>
+    <label class="btn btn-ghost file-label">
+      CSV 불러오기
+      <input type="file" id="importCsvInput" accept=".csv" hidden />
+    </label>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ================= 서가 (작품 정보 관리) ================= -->
+  <section id="page-library" class="page active">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">나의 서가</p >
+        <h1>읽은 작품을 정리하고,<br/>다음 분석을 시작하세요</h1>
+      </div>
+      <button class="btn btn-primary" id="newWorkBtn">+ 작품 등록</button>
+    </div>
+
+    <div class="search-row">
+      <input type="search" id="librarySearch" placeholder="작품명, 작가, 장르로 검색" />
+      <span class="search-count" id="libraryCount"></span>
+    </div>
+
+    <!-- SIGNATURE: 서가 책장 (책등이 늘어선 선반) -->
+    <div class="shelf" id="shelf"></div>
+  </section>
+
+  <!-- ================= 작품노트 (분석 허브) ================= -->
+  <section id="page-work" class="page">
+    <div class="work-head" id="workHead"></div>
+
+    <div class="analysis-tabs" id="analysisTabs">
+      <button class="analysis-tab active" data-section="plot">줄거리</button>
+      <button class="analysis-tab" data-section="characters">등장인물</button>
+      <button class="analysis-tab" data-section="theme">주제·상징</button>
+    </div>
+
+    <div class="analysis-body" id="analysisBody"></div>
+  </section>
+
+  <!-- ================= 감상문 ================= -->
+  <section id="page-essay" class="page">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">감상문 초안</p >
+        <h1>키워드로 감상문의<br/>첫 문단을 시작해 보세요</h1>
+      </div>
+    </div>
+
+    <div class="essay-layout">
+      <div class="essay-form">
+        <div class="form-field">
+          <label>작품 선택</label>
+          <select id="essayWorkSelect"></select>
+        </div>
+        <div class="form-field">
+          <label>감상 키워드 (쉼표로 구분)</label>
+          <textarea id="essayKeywords" rows="3" placeholder="예: 그리움, 시대의 비극, 인간의 존엄"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" id="generateEssayBtn">감상문 초안 생성</button>
+        <p class="ai-note">※ AI가 생성한 초안입니다. 자신의 생각을 더해 완성해 보세요.</p >
+      </div>
+
+      <div class="manuscript-paper" id="essayOutput">
+        <p class="manuscript-placeholder">왼쪽에서 작품과 키워드를 입력하면<br/>이곳에 감상문 초안이 작성됩니다.</p >
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 발표자료 ================= -->
+  <section id="page-slides" class="page">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">발표 개요</p >
+        <h1>발표 주제를 정하면<br/>핵심 흐름을 짜 드려요</h1>
+      </div>
+    </div>
+
+    <div class="essay-layout">
+      <div class="essay-form">
+        <div class="form-field">
+          <label>작품 선택</label>
+          <select id="slideWorkSelect"></select>
+        </div>
+        <div class="form-field">
+          <label>발표 주제</label>
+          <input type="text" id="slideTopic" placeholder="예: 인물의 내면 변화 분석" />
+        </div>
+        <button class="btn btn-primary btn-block" id="generateSlideBtn">발표 개요 생성</button>
+        <p class="ai-note">※ 생성된 개요는 발표 슬라이드 구성의 출발점으로 활용하세요.</p >
+      </div>
+
+      <div class="slide-outline" id="slideOutput">
+        <p class="manuscript-placeholder">왼쪽에서 작품과 발표 주제를 입력하면<br/>이곳에 발표 개요가 작성됩니다.</p >
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= 작품 등록/수정 모달 ================= -->
+<div class="modal-overlay" id="workModal">
+  <div class="modal">
+    <button class="modal__close" data-close="workModal" aria-label="닫기">×</button>
+    <h2 id="workModalTitle">작품 등록</h2>
+    <form id="workForm">
+      <div class="form-field"><label>작품명</label><input type="text" id="workTitle" required placeholder="예: 메밀꽃 필 무렵" /></div>
+      <div class="form-field"><label>작가</label><input type="text" id="workAuthor" required placeholder="예: 이효석" /></div>
+      <div class="form-field"><label>출판연도</label><input type="text" id="workYear" placeholder="예: 1936" /></div>
+      <div class="form-field"><label>장르</label>
+        <select id="workGenre">
+          <option value="단편소설">단편소설</option>
+          <option value="장편소설">장편소설</option>
+          <option value="시">시</option>
+          <option value="희곡">희곡</option>
+          <option value="수필">수필</option>
+          <option value="고전소설">고전소설</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-field"><label>메모</label><textarea id="workMemo" rows="3" placeholder="수업 진도, 발표 일정 등 자유롭게 메모하세요"></textarea></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close="workModal">취소</button>
+        <button type="submit" class="btn btn-primary" id="workSubmitBtn">등록하기</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
